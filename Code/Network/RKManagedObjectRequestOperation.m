@@ -260,7 +260,26 @@ static id RKRefetchedValueInManagedObjectContext(id value, NSManagedObjectContex
                     NSMutableArray *keyPathComponents = [[keyPath componentsSeparatedByString:@"."] mutableCopy];
                     NSString *destinationKey = [keyPathComponents lastObject];
                     [keyPathComponents removeLastObject];
-                    id sourceObject = [keyPathComponents count] ? [mappingResultsAtRootKey valueForKeyPath:[keyPathComponents componentsJoinedByString:@"."]] : mappingResultsAtRootKey;
+                    
+                    id sourceObject;
+                    
+                    if (RKObjectIsCollection(mappingResultsAtRootKey) && keyPathComponents.count > 0) {
+                        NSString* joinedKeyPath = [keyPathComponents componentsJoinedByString:@"."];
+                        
+                        // The following is equivalent to `sourceObject = [mappingResultsAtRootKey valueForKeyPath:joinedKeyPath]`,
+                        // with the exception that if an object in mappingResultsAtRootKey is not KVC-compliant for joinedKeyPath,
+                        // it is ignored by swallowing the exception.
+                        sourceObject = [[mappingResultsAtRootKey.class alloc] init];
+                        for (id nestedObject in mappingResultsAtRootKey) {
+                            @try {
+                                [sourceObject addObject:[nestedObject valueForKeyPath:joinedKeyPath]];
+                            }
+                            @catch (NSException *exception) {}
+                        }
+                    } else {
+                        sourceObject = [keyPathComponents count] ? [mappingResultsAtRootKey valueForKeyPath:[keyPathComponents componentsJoinedByString:@"."]] : mappingResultsAtRootKey;
+                    }
+                    
                     if (RKObjectIsCollection(sourceObject)) {
                         // This is a to-many relationship, we want to refetch each item at the keyPath
                         for (id nestedObject in sourceObject) {
