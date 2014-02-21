@@ -263,3 +263,4 @@
  @see `RKErrorMessage`
  */
 NSError *RKErrorFromMappingResult(RKMappingResult *mappingResult);
+NSError *RKErrorFromMappingResultAndRequestResponse(RKMappingResult *mappingResult, NSURLRequest *request, NSHTTPURLResponse *response);
